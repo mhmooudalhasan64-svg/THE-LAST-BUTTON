@@ -61,6 +61,7 @@ function App() {
   const [inspected, setInspected] = useState<string | null>(null);
   const [encounter, setEncounter] = useState<{ title: string; body: string } | null>(null);
   const [hazard, setHazard] = useState<'blackout' | 'lockdown' | null>(null);
+  const [chase, setChase] = useState<{ phase: 'approach' | 'chase' | 'caught' | 'escaped'; ticks: number } | null>(null);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
   const horrorEvents: Record<string, { title: string; body: string; titleAr: string; bodyAr: string; fear: number }> = {
@@ -105,6 +106,29 @@ function App() {
     setSave((current) => ({ ...current, fear: Math.max(0, Math.min(100, current.fear + (action === 'restore' ? 5 : -10))) }));
     setHazard(null);
   }
+  useEffect(() => {
+    if (tab !== 'explore' || roomId !== 'reactor' || save.itemsFound.length < 5 || save.horrorSeen.includes('stalker') || chase) return;
+    setSave((current) => ({ ...current, horrorSeen: [...current.horrorSeen, 'stalker'], fear: Math.min(100, current.fear + 10) }));
+    setChase({ phase: 'approach', ticks: 4 });
+  }, [tab, roomId, save.itemsFound.length, save.horrorSeen, chase]);
+
+  useEffect(() => {
+    if (!chase || chase.phase === 'caught' || chase.phase === 'escaped') return;
+    const timer = window.setInterval(() => {
+      setChase((current) => {
+        if (!current || current.phase === 'caught' || current.phase === 'escaped') return current;
+        if (current.ticks > 1) return { ...current, ticks: current.ticks - 1 };
+        return current.phase === 'approach' ? { phase: 'chase', ticks: 6 } : { phase: 'caught', ticks: 0 };
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [chase?.phase]);
+
+  function respondToChase(action: 'hide' | 'run') {
+    setSave((current) => ({ ...current, fear: Math.max(0, Math.min(100, current.fear + (action === 'hide' ? -8 : 12))) }));
+    setChase({ phase: 'escaped', ticks: 0 });
+  }
+
   const [flash, setFlash] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const t = copy[language];
@@ -202,6 +226,31 @@ function App() {
             <div className="object-list">{room.objects.map((object) => { const found = save.itemsFound.includes(object.item); return <button className={`object-card ${found ? 'found' : ''}`} key={object.id} onClick={() => inspectObject(object)}><span className="object-icon">{found ? '✓' : '⌕'}</span><span><strong>{isAr ? object.nameAr : object.name}</strong><small>{found ? (isAr ? 'تم فحصه' : 'INSPECTED') : (isAr ? 'افحص العنصر' : 'INSPECT OBJECT')}</small></span><b>›</b></button>; })}</div>
             {inspected && <div className="inspection-result"><span>{isAr ? 'نتيجة الفحص' : 'INSPECTION RESULT'}</span><p>{isAr ? room.objects.find((item) => item.id === inspected)?.detailAr : room.objects.find((item) => item.id === inspected)?.detail}</p></div>}
             {encounter && <div className="horror-encounter" role="alert"><span className="horror-kicker">{isAr ? 'تحذير / حدث غير معروف' : 'WARNING / UNKNOWN EVENT'}</span><h2>{encounter.title}</h2><p>{encounter.body}</p><div className="encounter-actions"><button onClick={() => faceEncounter('hide')}>{isAr ? 'اختبئ واحبس أنفاسك' : 'HIDE & HOLD BREATH'}</button><button onClick={() => faceEncounter('run')}>{isAr ? 'اهرب الآن' : 'RUN NOW'}</button></div></div>}
+            {chase && <div className={`stalker-event ${chase.phase}`} role="alert">
+              <span className="horror-kicker">{isAr ? 'تهديد متحرك / المنشأة 09' : 'MOBILE THREAT / FACILITY 09'}</span>
+              {chase.phase === 'approach' && <>
+                <h2>{isAr ? 'إنه يقترب...' : 'IT IS GETTING CLOSER...'}</h2>
+                <p>{isAr ? `تسمع خطوات ثقيلة في الممر. شيء ما يبحث عنك. أمامك ${chase.ticks} ثوانٍ لتختبئ.` : `Heavy footsteps echo down the corridor. Something is searching for you. You have ${chase.ticks} seconds to hide.`}</p>
+              </>}
+              {chase.phase === 'chase' && <>
+                <h2>{isAr ? 'لقد رآك! اهرب!' : 'IT HAS FOUND YOU. RUN!'}</h2>
+                <p>{isAr ? `الكيان يركض نحوك. تحرك الآن، بقيت ${chase.ticks} ثوانٍ.` : `The figure is charging toward you. Move now. ${chase.ticks} seconds remain.`}</p>
+              </>}
+              {chase.phase === 'caught' && <>
+                <h2>{isAr ? 'أمسك بك...' : 'IT CAUGHT YOU...'}</h2>
+                <p>{isAr ? 'تستيقظ قرب باب المولد. لم يتركك تخرج، لكنه ابتعد للحظة.' : 'You wake beside the generator door. It did not let you leave—but it has moved away for now.'}</p>
+                <div className="encounter-actions"><button onClick={() => setChase({ phase: 'approach', ticks: 4 })}>{isAr ? 'حاول مرة أخرى' : 'TRY AGAIN'}</button></div>
+              </>}
+              {chase.phase === 'escaped' && <>
+                <h2>{isAr ? 'نجوت... هذه المرة' : 'YOU SURVIVED. THIS TIME.'}</h2>
+                <p>{isAr ? 'تبتعد الخطوات خلف الباب. لكنك تعرف الآن أنه يستطيع الوصول إليك.' : 'The footsteps fade beyond the door. Now you know it can reach you.'}</p>
+                <div className="encounter-actions"><button onClick={() => setChase(null)}>{isAr ? 'تابع الاستكشاف' : 'CONTINUE EXPLORING'}</button></div>
+              </>}
+              {(chase.phase === 'approach' || chase.phase === 'chase') && <div className="encounter-actions">
+                <button onClick={() => respondToChase('hide')}>{isAr ? 'اختبئ داخل الخزانة' : 'HIDE IN THE LOCKER'}</button>
+                <button onClick={() => respondToChase('run')}>{isAr ? 'اركض نحو باب الأمن' : 'SPRINT TO SECURITY'}</button>
+              </div>}
+            </div>}
             {hazard && <div className={`environment-hazard ${hazard}`} role="alert">
               <span className="horror-kicker">{isAr ? 'خطر بيئي / منشأة 09' : 'FACILITY 09 / ENVIRONMENTAL HAZARD'}</span>
               <h2>{hazard === 'blackout' ? (isAr ? 'انقطاع كامل للكهرباء' : 'TOTAL POWER FAILURE') : (isAr ? 'إغلاق أمني طارئ' : 'EMERGENCY LOCKDOWN')}</h2>
