@@ -187,6 +187,12 @@ function App() {
             <button className={tab === 'archive' ? 'active' : ''} onClick={() => setTab('archive')}><Archive size={15}/>{t.archive}</button>
             <button className={tab === 'records' ? 'active' : ''} onClick={() => setTab('records')}><Trophy size={15}/>{t.records}</button>
           </div>
+          {tab === 'explore' && <div className="right-content explore-content">
+            <div className="section-heading"><span>{isAr ? 'خريطة المنشأة 09' : 'FACILITY 09 MAP'}</span><Eye size={15}/></div>
+            <p className="explore-hint">{isAr ? 'اختر موقعاً لاستكشافه. بعض الأبواب تحتاج إلى أدلة.' : 'Select a location to explore. Some doors require evidence.'}</p>
+            {rooms.map((item, index) => { const open = roomUnlocked(item); return <button key={item.id} className={`room-select ${roomId === item.id ? 'selected' : ''} ${!open ? 'locked' : ''}`} disabled={!open} onClick={() => { setRoomId(item.id); setInspected(null); }}><span className="room-number">0{index + 1}</span><span className="room-label"><strong>{isAr ? item.nameAr : item.name}</strong><small>{open ? (save.roomsVisited.includes(item.id) ? (isAr ? 'تمت الزيارة' : 'VISITED') : (isAr ? 'متاح' : 'AVAILABLE')) : (isAr ? `مطلوب ${item.requirement} أدلة` : `NEED ${item.requirement} ITEMS`)}</small></span><span className="room-state">{open ? '›' : '⌑'}</span></button>; })}
+            <div className="explore-count">{isAr ? 'الأدلة التي جمعتها' : 'EVIDENCE COLLECTED'} <strong>{save.itemsFound.length}/8</strong></div>
+          </div>}
           {tab === 'play' && <div className="right-content">
             <div className="section-heading"><span>{t.recent}</span><AudioLines size={15}/></div>
             {currentEvent ? <div className="transmission-card"><span className={`rarity ${currentEvent.rarity}`}>{t.rarity[currentEvent.rarity]}</span><h3>{currentEvent.title}</h3><p>{currentEvent.body}</p><small>{String(save.presses).padStart(4,'0')} / {t.presses}</small></div> : <div className="empty-card"><LockKeyhole size={22}/><p>{t.empty}</p><small>{t.emptyHint}</small></div>}
