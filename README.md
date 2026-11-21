@@ -23,26 +23,28 @@ npm install
 npm run dev
 ```
 
-## Build
+## Build and preview
 
 ```bash
 npm run build
 npm run preview
 ```
 
+The GitHub Actions workflow runs the TypeScript/Vite production build when changes are pushed to the development branch or a pull request is opened.
+
 ## Tech stack
 
 - React + TypeScript
 - Vite
 - Lucide icons
-- CSS responsive interface
+- Responsive CSS
 - Browser localStorage
 
 ## Roadmap
 
 1. Refine mystery pacing and narrative chapters.
 2. Add authored clue chains and multiple endings.
-3. Add sound design and accessibility polish.
+3. Improve sound design and accessibility.
 4. Package the web app for Android with Capacitor.
 
 Progress is stored locally in the current browser. No account or backend is required for this MVP.
