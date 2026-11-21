@@ -181,3 +181,14 @@ button{font:inherit}
 .rtl .fear-meter>div{flex-direction:row-reverse}
 .rtl .horror-encounter{text-align:right}
 @media(prefers-reduced-motion:reduce){.horror-encounter{animation:none}}
+
+/* Environmental hazards: blackout and lockdown */
+.environment-hazard{position:relative;margin-top:13px;padding:16px;border:1px solid #a52e43;border-radius:9px;background:linear-gradient(145deg,#241016,#08070b 75%);box-shadow:0 0 32px #b51c3328;animation:hazard-enter .45s ease}
+.environment-hazard.blackout{background:radial-gradient(ellipse at 50% 0%,#6d182b40,#050507 72%);border-color:#713040}
+.environment-hazard.lockdown{background:repeating-linear-gradient(135deg,#40121a22 0 9px,#08070b 9px 18px);border-color:#b52e40;animation:hazard-enter .45s ease,lockdown-pulse 1.8s ease-in-out 2}
+.environment-hazard h2{font-size:14px;letter-spacing:.06em;color:#f2dfe3;margin:10px 0 7px}
+.environment-hazard p{font-size:10px;line-height:1.85;color:#c3aeb4;margin:0}
+.environment-hazard .encounter-actions button:first-child{background:#85253655;border-color:#bd4354}
+@keyframes hazard-enter{0%{opacity:0;transform:translateY(9px);filter:blur(3px)}100%{opacity:1;transform:translateY(0);filter:blur(0)}}
+@keyframes lockdown-pulse{0%,100%{box-shadow:0 0 22px #b51c3320}50%{box-shadow:0 0 38px #d72d493f}}
+@media(prefers-reduced-motion:reduce){.environment-hazard{animation:none}}
