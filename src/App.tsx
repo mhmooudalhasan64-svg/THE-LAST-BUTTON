@@ -155,7 +155,14 @@ function App() {
         </aside>
 
         <section className="center-stage">
-          <div className="stage-topline"><span><i className="tiny-dot" />{t.status}</span><span>NO. {String(save.presses + 1).padStart(5,'0')}</span></div>
+          {tab === 'explore' ? <div className="exploration-stage">
+            <div className="stage-topline"><span><i className="tiny-dot" />{isAr ? 'منشأة 09 / منطقة محظورة' : 'FACILITY 09 / RESTRICTED AREA'}</span><span>{isAr ? 'استكشاف' : 'EXPLORATION'}</span></div>
+            <div className="room-scene"><div className="scene-grid"/><div className="scene-light"/><div className="scene-door"/><div className="scene-console"><i/><i/><i/></div><span className="scene-code">09 // {room.id.toUpperCase()}</span><span className="scene-warning">{isAr ? 'تحذير: لا يوجد إخلاء' : 'WARNING: NO EVACUATION'}</span></div>
+            <div className="room-heading"><span>{isAr ? 'الموقع الحالي' : 'CURRENT LOCATION'}</span><h1>{isAr ? room.nameAr : room.name}</h1><p>{isAr ? room.descriptionAr : room.description}</p></div>
+            <div className="object-list">{room.objects.map((object) => { const found = save.itemsFound.includes(object.item); return <button className={`object-card ${found ? 'found' : ''}`} key={object.id} onClick={() => inspectObject(object)}><span className="object-icon">{found ? '✓' : '⌕'}</span><span><strong>{isAr ? object.nameAr : object.name}</strong><small>{found ? (isAr ? 'تم فحصه' : 'INSPECTED') : (isAr ? 'افحص العنصر' : 'INSPECT OBJECT')}</small></span><b>›</b></button>; })}</div>
+            {inspected && <div className="inspection-result"><span>{isAr ? 'نتيجة الفحص' : 'INSPECTION RESULT'}</span><p>{isAr ? room.objects.find((item) => item.id === inspected)?.detailAr : room.objects.find((item) => item.id === inspected)?.detail}</p></div>}
+            <button className="back-button" onClick={() => setTab('play')}>{isAr ? 'العودة إلى الزر' : 'RETURN TO THE BUTTON'}</button>
+          </div> : <><div className="stage-topline"><span><i className="tiny-dot" />{t.status}</span><span>NO. {String(save.presses + 1).padStart(5,'0')}</span></div>
           <div className="button-zone">
             <div className="orbit orbit-a" /><div className="orbit orbit-b" />
             <div className="button-halo" />
@@ -170,12 +177,13 @@ function App() {
             <p>{currentEvent ? currentEvent.body : t.beginBody}</p>
             {currentEvent?.kind === 'clue' && <span className="event-note"><Eye size={13} />{t.firstSecret}</span>}
           </div>
-          <div className="stage-footer"><span>{t.footer}</span><span>{save.presses === 0 ? '— — —' : '● ● ●'}</span></div>
+          <div className="stage-footer"><span>{t.footer}</span><span>{save.presses === 0 ? '— — —' : '● ● ●'}</span></div></>}
         </section>
 
         <aside className="right-panel">
           <div className="panel-tabs">
             <button className={tab === 'play' ? 'active' : ''} onClick={() => setTab('play')}><CircleHelp size={15}/>{t.play}</button>
+            <button className={tab === 'explore' ? 'active' : ''} onClick={() => { setTab('explore'); setInspected(null); }}><Eye size={15}/>{isAr ? 'استكشف' : 'EXPLORE'}</button>
             <button className={tab === 'archive' ? 'active' : ''} onClick={() => setTab('archive')}><Archive size={15}/>{t.archive}</button>
             <button className={tab === 'records' ? 'active' : ''} onClick={() => setTab('records')}><Trophy size={15}/>{t.records}</button>
           </div>
