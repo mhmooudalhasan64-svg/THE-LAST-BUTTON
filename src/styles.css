@@ -222,3 +222,13 @@ button{font:inherit}
 @keyframes stalker-distant{from{margin-left:-5px}to{margin-left:5px}}
 @keyframes stalker-lunge{from{margin-left:-3px}to{margin-left:3px}}
 @media(prefers-reduced-motion:reduce){.scene-stalker,.scene-stalker.approach,.scene-stalker.chase{animation:none}}
+
+
+/* Tactical hiding: room-specific cover selection */
+.hiding-choice-heading{margin-top:13px;color:#c58a94;font:8px 'DM Mono',monospace;letter-spacing:.12em;line-height:1.7}
+.hiding-choices{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.hiding-choices button{min-height:48px;padding:9px 8px;border:1px solid #75404a;border-radius:7px;background:linear-gradient(145deg,#241016,#0c0a0f);color:#e2c8ce;font-size:9px;line-height:1.6;text-align:left;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+.hiding-choices button:hover{border-color:#d34b60;background:#421522;transform:translateY(-1px)}
+.rtl .hiding-choice-heading{text-align:right;font-family:'Noto Sans Arabic',sans-serif;letter-spacing:0}
+.rtl .hiding-choices button{text-align:right;font-family:'Noto Sans Arabic',sans-serif}
+@media(max-width:420px){.hiding-choices{grid-template-columns:1fr}.hiding-choices button{min-height:42px}}
