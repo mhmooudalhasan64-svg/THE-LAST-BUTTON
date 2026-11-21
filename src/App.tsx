@@ -62,6 +62,7 @@ function App() {
   const [encounter, setEncounter] = useState<{ title: string; body: string } | null>(null);
   const [hazard, setHazard] = useState<'blackout' | 'lockdown' | null>(null);
   const [chase, setChase] = useState<{ phase: 'approach' | 'chase' | 'caught' | 'escaped'; ticks: number } | null>(null);
+  const [stalkerRoomsSeen, setStalkerRoomsSeen] = useState<string[]>([]);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
   const horrorEvents: Record<string, { title: string; body: string; titleAr: string; bodyAr: string; fear: number }> = {
@@ -107,10 +108,18 @@ function App() {
     setHazard(null);
   }
   useEffect(() => {
-    if (tab !== 'explore' || roomId !== 'reactor' || save.itemsFound.length < 5 || save.horrorSeen.includes('stalker') || chase) return;
-    setSave((current) => ({ ...current, horrorSeen: [...current.horrorSeen, 'stalker'], fear: Math.min(100, current.fear + 10) }));
-    setChase({ phase: 'approach', ticks: 4 });
-  }, [tab, roomId, save.itemsFound.length, save.horrorSeen, chase]);
+    if (tab !== 'explore' || chase) return;
+    if (roomId === 'reactor' && save.itemsFound.length >= 5 && !save.horrorSeen.includes('stalker')) {
+      setSave((current) => ({ ...current, horrorSeen: [...current.horrorSeen, 'stalker'], fear: Math.min(100, current.fear + 10) }));
+      setStalkerRoomsSeen((seen) => seen.includes(roomId) ? seen : [...seen, roomId]);
+      setChase({ phase: 'approach', ticks: 4 });
+      return;
+    }
+    if (save.horrorSeen.includes('stalker') && !stalkerRoomsSeen.includes(roomId)) {
+      setStalkerRoomsSeen((seen) => [...seen, roomId]);
+      setChase({ phase: 'approach', ticks: 3 });
+    }
+  }, [tab, roomId, save.itemsFound.length, save.horrorSeen, chase, stalkerRoomsSeen]);
 
   useEffect(() => {
     if (!chase || chase.phase === 'caught' || chase.phase === 'escaped') return;
