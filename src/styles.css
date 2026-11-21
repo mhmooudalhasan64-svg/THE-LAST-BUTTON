@@ -192,3 +192,17 @@ button{font:inherit}
 @keyframes hazard-enter{0%{opacity:0;transform:translateY(9px);filter:blur(3px)}100%{opacity:1;transform:translateY(0);filter:blur(0)}}
 @keyframes lockdown-pulse{0%,100%{box-shadow:0 0 22px #b51c3320}50%{box-shadow:0 0 38px #d72d493f}}
 @media(prefers-reduced-motion:reduce){.environment-hazard{animation:none}}
+
+
+/* The Stalker: timed approach and chase encounter */
+.stalker-event{position:relative;margin-top:13px;padding:17px;border:1px solid #853443;border-radius:9px;background:radial-gradient(ellipse at 50% 0%,#771c3038,#08070b 72%);box-shadow:0 0 30px #b51c3328;animation:horror-arrive .4s ease;overflow:hidden}
+.stalker-event:before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 3px,#ffffff06 4px)}
+.stalker-event h2{position:relative;font-size:15px;letter-spacing:.06em;color:#f3dfe3;margin:10px 0 7px}
+.stalker-event p{position:relative;font-size:10px;line-height:1.9;color:#d0b9bf;margin:0}
+.stalker-event.approach{border-color:#75505a;animation:stalker-pulse 1.5s ease-in-out infinite}
+.stalker-event.chase{border-color:#d52d48;background:radial-gradient(ellipse at 50% 0%,#b51c3355,#08070b 75%);animation:stalker-shake .22s linear infinite}
+.stalker-event.caught{border-color:#5e2935;filter:saturate(.65)}
+.stalker-event.escaped{border-color:#526b59;background:radial-gradient(ellipse at 50% 0%,#31583a30,#08070b 75%)}
+@keyframes stalker-pulse{50%{box-shadow:0 0 35px #a12a414d}}
+@keyframes stalker-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(1px)}75%{transform:translateX(-1px)}}
+@media(prefers-reduced-motion:reduce){.stalker-event{animation:none}}
