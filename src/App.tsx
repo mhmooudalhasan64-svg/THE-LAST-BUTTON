@@ -59,12 +59,35 @@ function App() {
   const [event, setEvent] = useState<MysteryEvent | null>(null);
   const [roomId, setRoomId] = useState('control');
   const [inspected, setInspected] = useState<string | null>(null);
+  const [encounter, setEncounter] = useState<{ title: string; body: string } | null>(null);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
+  const horrorEvents: Record<string, { title: string; body: string; titleAr: string; bodyAr: string; fear: number }> = {
+    keycard: { title: 'FOOTSTEPS BEHIND YOU', body: 'A second set of footsteps stops when you stop. The room is empty when you turn around.', titleAr: 'خطوات خلفك', bodyAr: 'تتوقف خطوات ثانية عندما تتوقف أنت. وحين تلتفت، تكون الغرفة فارغة.', fear: 14 },
+    recording: { title: 'LIVE FEEDBACK', body: 'The recorder clicks by itself. A voice matching yours whispers: “I can see your hands.”', titleAr: 'تسجيل مباشر', bodyAr: 'يعمل المسجل وحده. صوت يشبه صوتك يهمس: «أستطيع رؤية يديك».', fear: 20 },
+    'incident-log': { title: 'NEW ENTRY', body: 'A fresh line appears beneath the report: SUBJECT IS READING THIS NOW.', titleAr: 'إضافة جديدة', bodyAr: 'يظهر سطر جديد أسفل التقرير: الشخص يقرأ هذا الآن.', fear: 18 },
+    'camera-footage': { title: 'CAMERA 04', body: 'On the monitor, something stands directly behind your character. It is not in this room.', titleAr: 'الكاميرا 04', bodyAr: 'على الشاشة، يقف شيء خلف شخصيتك مباشرة. لكنه ليس موجوداً في هذه الغرفة.', fear: 24 },
+    'subject-file': { title: 'THE MISSING PHOTO', body: 'The glossy surface reflects your face. The photograph was never removed.', titleAr: 'الصورة المفقودة', bodyAr: 'يعكس السطح اللامع وجهك. الصورة لم تُنزع من الملف أصلاً.', fear: 22 },
+    'handwritten-note': { title: 'FRESH INK', body: 'The ink is still wet. A final sentence forms beneath your fingers: “Too late.”', titleAr: 'حبر طازج', bodyAr: 'الحبر لا يزال رطباً. تتشكل جملة تحت أصابعك: «لقد تأخرت».', fear: 16 },
+    'override-switch': { title: 'SOMETHING IN THE SHAFT', body: 'Three knocks answer from inside the wall. Then your name is spoken from the other side.', titleAr: 'شيء داخل الممر', bodyAr: 'ثلاث طرقات تأتي من داخل الجدار. ثم ينطق صوت باسمك من الجهة الأخرى.', fear: 25 },
+    'live-transmission': { title: 'YOUR VOICE', body: 'The speaker repeats your last words before you say them. The transmission is ahead of you.', titleAr: 'صوتك أنت', bodyAr: 'يكرر مكبر الصوت كلماتك قبل أن تنطق بها. البث يسبقك.', fear: 28 },
+  };
   function inspectObject(object: typeof room.objects[number]) {
     setInspected(object.id);
-    if (!save.itemsFound.includes(object.item)) setSave((current) => ({ ...current, itemsFound: [...current.itemsFound, object.item] }));
-    if (!save.roomsVisited.includes(room.id)) setSave((current) => ({ ...current, roomsVisited: [...current.roomsVisited, room.id] }));
+    const event = horrorEvents[object.item];
+    const firstEncounter = !save.horrorSeen.includes(object.item);
+    setSave((current) => ({
+      ...current,
+      itemsFound: current.itemsFound.includes(object.item) ? current.itemsFound : [...current.itemsFound, object.item],
+      roomsVisited: current.roomsVisited.includes(room.id) ? current.roomsVisited : [...current.roomsVisited, room.id],
+      fear: firstEncounter ? Math.min(100, current.fear + (event?.fear ?? 8)) : current.fear,
+      horrorSeen: firstEncounter ? [...current.horrorSeen, object.item] : current.horrorSeen,
+    }));
+    if (event && firstEncounter) setEncounter({ title: isAr ? event.titleAr : event.title, body: isAr ? event.bodyAr : event.body });
+  }
+  function faceEncounter(action: 'hide' | 'run') {
+    setSave((current) => ({ ...current, fear: Math.max(0, Math.min(100, current.fear + (action === 'hide' ? -12 : 8))) }));
+    setEncounter(null);
   }
   const [flash, setFlash] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -159,8 +182,10 @@ function App() {
             <div className="stage-topline"><span><i className="tiny-dot" />{isAr ? 'منشأة 09 / منطقة محظورة' : 'FACILITY 09 / RESTRICTED AREA'}</span><span>{isAr ? 'استكشاف' : 'EXPLORATION'}</span></div>
             <div className="room-scene"><div className="scene-grid"/><div className="scene-light"/><div className="scene-door"/><div className="scene-console"><i/><i/><i/></div><span className="scene-code">09 // {room.id.toUpperCase()}</span><span className="scene-warning">{isAr ? 'تحذير: لا يوجد إخلاء' : 'WARNING: NO EVACUATION'}</span></div>
             <div className="room-heading"><span>{isAr ? 'الموقع الحالي' : 'CURRENT LOCATION'}</span><h1>{isAr ? room.nameAr : room.name}</h1><p>{isAr ? room.descriptionAr : room.description}</p></div>
+            <div className="fear-meter"><div><span>{isAr ? 'مستوى التوتر' : 'FEAR LEVEL'}</span><strong>{save.fear}%</strong></div><i><b style={{width: `${save.fear}%`}} /></i></div>
             <div className="object-list">{room.objects.map((object) => { const found = save.itemsFound.includes(object.item); return <button className={`object-card ${found ? 'found' : ''}`} key={object.id} onClick={() => inspectObject(object)}><span className="object-icon">{found ? '✓' : '⌕'}</span><span><strong>{isAr ? object.nameAr : object.name}</strong><small>{found ? (isAr ? 'تم فحصه' : 'INSPECTED') : (isAr ? 'افحص العنصر' : 'INSPECT OBJECT')}</small></span><b>›</b></button>; })}</div>
             {inspected && <div className="inspection-result"><span>{isAr ? 'نتيجة الفحص' : 'INSPECTION RESULT'}</span><p>{isAr ? room.objects.find((item) => item.id === inspected)?.detailAr : room.objects.find((item) => item.id === inspected)?.detail}</p></div>}
+            {encounter && <div className="horror-encounter" role="alert"><span className="horror-kicker">{isAr ? 'تحذير / حدث غير معروف' : 'WARNING / UNKNOWN EVENT'}</span><h2>{encounter.title}</h2><p>{encounter.body}</p><div className="encounter-actions"><button onClick={() => faceEncounter('hide')}>{isAr ? 'اختبئ واحبس أنفاسك' : 'HIDE & HOLD BREATH'}</button><button onClick={() => faceEncounter('run')}>{isAr ? 'اهرب الآن' : 'RUN NOW'}</button></div></div>}
             <button className="back-button" onClick={() => setTab('play')}>{isAr ? 'العودة إلى الزر' : 'RETURN TO THE BUTTON'}</button>
           </div> : <><div className="stage-topline"><span><i className="tiny-dot" />{t.status}</span><span>NO. {String(save.presses + 1).padStart(5,'0')}</span></div>
           <div className="button-zone">
