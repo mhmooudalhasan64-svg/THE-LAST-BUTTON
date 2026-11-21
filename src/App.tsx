@@ -8,6 +8,49 @@ import { rooms } from './data/exploration';
 type Tab = 'play' | 'explore' | 'archive' | 'records';
 type Language = 'en' | 'ar';
 
+function playHorrorCue(kind: 'step' | 'breath' | 'caught' | 'escaped', intensity = 1) {
+  try {
+    const audio = new AudioContext();
+    const now = audio.currentTime;
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+
+    if (kind === 'step') {
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(72 * intensity, now);
+      oscillator.frequency.exponentialRampToValueAtTime(38 * intensity, now + 0.16);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.055 * intensity, now + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+      oscillator.start(now);
+      oscillator.stop(now + 0.22);
+    } else if (kind === 'breath') {
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(115, now);
+      oscillator.frequency.exponentialRampToValueAtTime(68, now + 0.65);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.022, now + 0.22);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+      oscillator.start(now);
+      oscillator.stop(now + 0.82);
+    } else {
+      oscillator.type = kind === 'caught' ? 'sawtooth' : 'sine';
+      oscillator.frequency.setValueAtTime(kind === 'caught' ? 190 : 420, now);
+      oscillator.frequency.exponentialRampToValueAtTime(kind === 'caught' ? 42 : 760, now + 0.55);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(kind === 'caught' ? 0.07 : 0.035, now + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
+      oscillator.start(now);
+      oscillator.stop(now + 0.65);
+    }
+    oscillator.onended = () => void audio.close();
+    void audio.resume();
+  } catch { /* Audio is optional and may be unavailable on some devices. */ }
+}
+
+
 const copy = {
   en: {
     subtitle:'ONE BUTTON. A THOUSAND SECRETS.', status:'UNKNOWN SIGNAL',
@@ -65,6 +108,25 @@ function App() {
   const [stalkerPosition, setStalkerPosition] = useState(16);
   const [stalkerDirection, setStalkerDirection] = useState<1 | -1>(1);
   const [stalkerRoomsSeen, setStalkerRoomsSeen] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!save.soundOn || !chase || (chase.phase !== 'approach' && chase.phase !== 'chase')) return;
+    let beat = 0;
+    const interval = window.setInterval(() => {
+      beat += 1;
+      const intensity = chase.phase === 'chase' ? 1.35 : 0.8;
+      if (beat % 3 === 0) playHorrorCue('breath', intensity);
+      else playHorrorCue('step', intensity);
+    }, chase.phase === 'chase' ? 560 : 920);
+    return () => window.clearInterval(interval);
+  }, [chase?.phase, save.soundOn]);
+
+  useEffect(() => {
+    if (!save.soundOn || !chase) return;
+    if (chase.phase === 'caught') playHorrorCue('caught');
+    if (chase.phase === 'escaped') playHorrorCue('escaped');
+  }, [chase?.phase, save.soundOn]);
+
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
   const horrorEvents: Record<string, { title: string; body: string; titleAr: string; bodyAr: string; fear: number }> = {
