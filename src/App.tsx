@@ -133,9 +133,27 @@ function App() {
     return () => window.clearInterval(timer);
   }, [chase?.phase]);
 
-  function respondToChase(action: 'hide' | 'run') {
-    setSave((current) => ({ ...current, fear: Math.max(0, Math.min(100, current.fear + (action === 'hide' ? -8 : 12))) }));
-    setChase({ phase: 'escaped', ticks: 0 });
+  const hidingSpots: Record<string, { id: string; en: string; ar: string; safe: boolean }[]> = {
+    control: [{ id: 'console', en: 'Crawl beneath the control console', ar: 'ازحف أسفل منصة التحكم', safe: true }, { id: 'door', en: 'Stand behind the security door', ar: 'اختبئ خلف باب الأمن', safe: false }],
+    security: [{ id: 'servers', en: 'Squeeze behind the server rack', ar: 'تسلل خلف خزانة الخوادم', safe: true }, { id: 'chair', en: 'Hide beneath the warm chair', ar: 'اختبئ أسفل الكرسي الدافئ', safe: false }],
+    archive: [{ id: 'shelves', en: 'Hide between the archive shelves', ar: 'اختبئ بين رفوف الأرشيف', safe: true }, { id: 'desk', en: 'Crouch behind the open desk', ar: 'انخفض خلف المكتب المفتوح', safe: false }],
+    reactor: [{ id: 'generator', en: 'Press against the generator housing', ar: 'التصق خلف هيكل المولد', safe: true }, { id: 'shaft', en: 'Climb into the maintenance shaft', ar: 'ادخل فتحة الصيانة', safe: false }],
+  };
+
+  function respondToChase(action: 'hide' | 'run', spotId?: string) {
+    if (action === 'run') {
+      setSave((current) => ({ ...current, fear: Math.min(100, current.fear + 12) }));
+      setChase({ phase: 'escaped', ticks: 0 });
+      return;
+    }
+    const spot = (hidingSpots[roomId] ?? hidingSpots.control).find((item) => item.id === spotId);
+    if (spot?.safe) {
+      setSave((current) => ({ ...current, fear: Math.max(0, current.fear - 8) }));
+      setChase({ phase: 'escaped', ticks: 0 });
+    } else {
+      setSave((current) => ({ ...current, fear: Math.min(100, current.fear + 18) }));
+      setChase({ phase: 'caught', ticks: 0 });
+    }
   }
 
   const [flash, setFlash] = useState(false);
@@ -255,10 +273,13 @@ function App() {
                 <p>{isAr ? 'تبتعد الخطوات خلف الباب. لكنك تعرف الآن أنه يستطيع الوصول إليك.' : 'The footsteps fade beyond the door. Now you know it can reach you.'}</p>
                 <div className="encounter-actions"><button onClick={() => setChase(null)}>{isAr ? 'تابع الاستكشاف' : 'CONTINUE EXPLORING'}</button></div>
               </>}
-              {(chase.phase === 'approach' || chase.phase === 'chase') && <div className="encounter-actions">
-                <button onClick={() => respondToChase('hide')}>{isAr ? 'اختبئ داخل الخزانة' : 'HIDE IN THE LOCKER'}</button>
-                <button onClick={() => respondToChase('run')}>{isAr ? 'اركض نحو باب الأمن' : 'SPRINT TO SECURITY'}</button>
-              </div>}
+              {(chase.phase === 'approach' || chase.phase === 'chase') && <>
+                <div className="hiding-choice-heading">{isAr ? 'اختر مكان اختبائك — ليس كل مكان آمن' : 'CHOOSE A HIDING PLACE — NOT EVERY SPOT IS SAFE'}</div>
+                <div className="hiding-choices">
+                  {(hidingSpots[roomId] ?? hidingSpots.control).map((spot) => <button key={spot.id} onClick={() => respondToChase('hide', spot.id)}>{isAr ? spot.ar : spot.en}</button>)}
+                </div>
+                <div className="encounter-actions"><button onClick={() => respondToChase('run')}>{isAr ? 'اترك المكان واركض' : 'ABANDON COVER & RUN'}</button></div>
+              </>}
             </div>}
             {hazard && <div className={`environment-hazard ${hazard}`} role="alert">
               <span className="horror-kicker">{isAr ? 'خطر بيئي / منشأة 09' : 'FACILITY 09 / ENVIRONMENTAL HAZARD'}</span>
