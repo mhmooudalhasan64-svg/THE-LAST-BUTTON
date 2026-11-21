@@ -62,6 +62,7 @@ function App() {
   const [encounter, setEncounter] = useState<{ title: string; body: string } | null>(null);
   const [hazard, setHazard] = useState<'blackout' | 'lockdown' | null>(null);
   const [chase, setChase] = useState<{ phase: 'approach' | 'chase' | 'caught' | 'escaped'; ticks: number } | null>(null);
+  const [stalkerPosition, setStalkerPosition] = useState(16);
   const [stalkerRoomsSeen, setStalkerRoomsSeen] = useState<string[]>([]);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
@@ -112,11 +113,13 @@ function App() {
     if (roomId === 'reactor' && save.itemsFound.length >= 5 && !save.horrorSeen.includes('stalker')) {
       setSave((current) => ({ ...current, horrorSeen: [...current.horrorSeen, 'stalker'], fear: Math.min(100, current.fear + 10) }));
       setStalkerRoomsSeen((seen) => seen.includes(roomId) ? seen : [...seen, roomId]);
+      setStalkerPosition(16);
       setChase({ phase: 'approach', ticks: 4 });
       return;
     }
     if (save.horrorSeen.includes('stalker') && !stalkerRoomsSeen.includes(roomId)) {
       setStalkerRoomsSeen((seen) => [...seen, roomId]);
+      setStalkerPosition(16);
       setChase({ phase: 'approach', ticks: 3 });
     }
   }, [tab, roomId, save.itemsFound.length, save.horrorSeen, chase, stalkerRoomsSeen]);
@@ -124,6 +127,7 @@ function App() {
   useEffect(() => {
     if (!chase || chase.phase === 'caught' || chase.phase === 'escaped') return;
     const timer = window.setInterval(() => {
+      setStalkerPosition((position) => Math.min(88, position + (chase.phase === 'approach' ? 8 : 14)));
       setChase((current) => {
         if (!current || current.phase === 'caught' || current.phase === 'escaped') return current;
         if (current.ticks > 1) return { ...current, ticks: current.ticks - 1 };
@@ -133,11 +137,11 @@ function App() {
     return () => window.clearInterval(timer);
   }, [chase?.phase]);
 
-  const hidingSpots: Record<string, { id: string; en: string; ar: string; safe: boolean }[]> = {
-    control: [{ id: 'console', en: 'Crawl beneath the control console', ar: 'ازحف أسفل منصة التحكم', safe: true }, { id: 'door', en: 'Stand behind the security door', ar: 'اختبئ خلف باب الأمن', safe: false }],
-    security: [{ id: 'servers', en: 'Squeeze behind the server rack', ar: 'تسلل خلف خزانة الخوادم', safe: true }, { id: 'chair', en: 'Hide beneath the warm chair', ar: 'اختبئ أسفل الكرسي الدافئ', safe: false }],
-    archive: [{ id: 'shelves', en: 'Hide between the archive shelves', ar: 'اختبئ بين رفوف الأرشيف', safe: true }, { id: 'desk', en: 'Crouch behind the open desk', ar: 'انخفض خلف المكتب المفتوح', safe: false }],
-    reactor: [{ id: 'generator', en: 'Press against the generator housing', ar: 'التصق خلف هيكل المولد', safe: true }, { id: 'shaft', en: 'Climb into the maintenance shaft', ar: 'ادخل فتحة الصيانة', safe: false }],
+  const hidingSpots: Record<string, { id: string; en: string; ar: string; side: 'left' | 'right' }[]> = {
+    control: [{ id: 'console', en: 'Crawl beneath the control console', ar: 'ازحف أسفل منصة التحكم', side: 'left' }, { id: 'door', en: 'Stand behind the security door', ar: 'اختبئ خلف باب الأمن', side: 'right' }],
+    security: [{ id: 'servers', en: 'Squeeze behind the server rack', ar: 'تسلل خلف خزانة الخوادم', side: 'right' }, { id: 'chair', en: 'Hide beneath the warm chair', ar: 'اختبئ أسفل الكرسي الدافئ', side: 'left' }],
+    archive: [{ id: 'shelves', en: 'Hide between the archive shelves', ar: 'اختبئ بين رفوف الأرشيف', side: 'left' }, { id: 'desk', en: 'Crouch behind the open desk', ar: 'انخفض خلف المكتب المفتوح', side: 'right' }],
+    reactor: [{ id: 'generator', en: 'Press against the generator housing', ar: 'التصق خلف هيكل المولد', side: 'right' }, { id: 'shaft', en: 'Climb into the maintenance shaft', ar: 'ادخل فتحة الصيانة', side: 'left' }],
   };
 
   function respondToChase(action: 'hide' | 'run', spotId?: string) {
@@ -147,7 +151,9 @@ function App() {
       return;
     }
     const spot = (hidingSpots[roomId] ?? hidingSpots.control).find((item) => item.id === spotId);
-    if (spot?.safe) {
+    const stalkerSide = stalkerPosition < 50 ? 'left' : 'right';
+    const isConcealed = Boolean(spot && spot.side !== stalkerSide);
+    if (spot && isConcealed) {
       setSave((current) => ({ ...current, fear: Math.max(0, current.fear - 8) }));
       setChase({ phase: 'escaped', ticks: 0 });
     } else {
@@ -247,7 +253,7 @@ function App() {
         <section className="center-stage">
           {tab === 'explore' ? <div className="exploration-stage">
             <div className="stage-topline"><span><i className="tiny-dot" />{isAr ? 'منشأة 09 / منطقة محظورة' : 'FACILITY 09 / RESTRICTED AREA'}</span><span>{isAr ? 'استكشاف' : 'EXPLORATION'}</span></div>
-            <div className={"room-scene " + (chase && chase.phase !== "escaped" ? "stalker-visible " + chase.phase : "")}><div className="scene-grid"/><div className="scene-light"/><div className="scene-door"/>{chase && chase.phase !== "escaped" && <div className={"scene-stalker " + chase.phase} role="img" aria-label={isAr ? "ظل كيان غامض في الممر" : "A shadowy figure in the corridor"}><i/><i/></div>}<div className="scene-console"><i/><i/><i/></div><span className="scene-code">09 // {room.id.toUpperCase()}</span><span className="scene-warning">{isAr ? 'تحذير: لا يوجد إخلاء' : 'WARNING: NO EVACUATION'}</span></div>
+            <div className={"room-scene " + (chase && chase.phase !== "escaped" ? "stalker-visible " + chase.phase : "")}><div className="scene-grid"/><div className="scene-light"/><div className="scene-door"/>{chase && chase.phase !== "escaped" && <div className={"scene-stalker " + chase.phase} style={{ left: stalkerPosition + '%' }} role="img" aria-label={isAr ? "ظل كيان غامض يتحرك داخل الممر" : "A shadowy figure moving through the corridor"}><i/><i/></div>}<div className="scene-console"><i/><i/><i/></div><span className="scene-code">09 // {room.id.toUpperCase()}</span><span className="scene-warning">{isAr ? 'تحذير: لا يوجد إخلاء' : 'WARNING: NO EVACUATION'}</span></div>
             <div className="room-heading"><span>{isAr ? 'الموقع الحالي' : 'CURRENT LOCATION'}</span><h1>{isAr ? room.nameAr : room.name}</h1><p>{isAr ? room.descriptionAr : room.description}</p></div>
             <div className="fear-meter"><div><span>{isAr ? 'مستوى التوتر' : 'FEAR LEVEL'}</span><strong>{save.fear}%</strong></div><i><b style={{width: `${save.fear}%`}} /></i></div>
             <div className="object-list">{room.objects.map((object) => { const found = save.itemsFound.includes(object.item); return <button className={`object-card ${found ? 'found' : ''}`} key={object.id} onClick={() => inspectObject(object)}><span className="object-icon">{found ? '✓' : '⌕'}</span><span><strong>{isAr ? object.nameAr : object.name}</strong><small>{found ? (isAr ? 'تم فحصه' : 'INSPECTED') : (isAr ? 'افحص العنصر' : 'INSPECT OBJECT')}</small></span><b>›</b></button>; })}</div>
@@ -266,7 +272,7 @@ function App() {
               {chase.phase === 'caught' && <>
                 <h2>{isAr ? 'أمسك بك...' : 'IT CAUGHT YOU...'}</h2>
                 <p>{isAr ? 'تستيقظ قرب باب المولد. لم يتركك تخرج، لكنه ابتعد للحظة.' : 'You wake beside the generator door. It did not let you leave—but it has moved away for now.'}</p>
-                <div className="encounter-actions"><button onClick={() => setChase({ phase: 'approach', ticks: 4 })}>{isAr ? 'حاول مرة أخرى' : 'TRY AGAIN'}</button></div>
+                <div className="encounter-actions"><button onClick={() => { setStalkerPosition(16); setChase({ phase: 'approach', ticks: 4 }); }}>{isAr ? 'حاول مرة أخرى' : 'TRY AGAIN'}</button></div>
               </>}
               {chase.phase === 'escaped' && <>
                 <h2>{isAr ? 'نجوت... هذه المرة' : 'YOU SURVIVED. THIS TIME.'}</h2>
