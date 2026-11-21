@@ -248,7 +248,7 @@ function App() {
     if (save.horrorSeen.includes('stalker') && !stalkerRoomsSeen.includes(roomId)) {
       setStalkerRoomsSeen((seen) => [...seen, roomId]);
       setStalkerPosition(16);
-      setStalkerDirection(1);
+      stalkerDirectionRef.current = 1;
       setChase({ phase: 'approach', ticks: 3 });
     }
   }, [tab, roomId, save.itemsFound.length, save.horrorSeen, chase, stalkerRoomsSeen]);
