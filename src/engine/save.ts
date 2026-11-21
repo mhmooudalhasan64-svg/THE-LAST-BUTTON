@@ -7,6 +7,8 @@ export type GameSave = {
   soundOn: boolean;
   itemsFound: string[];
   roomsVisited: string[];
+  fear: number;
+  horrorSeen: string[];
 };
 
 const KEY = 'the-last-button-save-v1';
@@ -20,6 +22,8 @@ export const emptySave: GameSave = {
   soundOn: false,
   itemsFound: [],
   roomsVisited: [],
+  fear: 0,
+  horrorSeen: [],
 };
 
 export function loadSave(): GameSave {
@@ -35,6 +39,8 @@ export function loadSave(): GameSave {
       achievements: Array.isArray(parsed.achievements) ? parsed.achievements : [],
       itemsFound: Array.isArray(parsed.itemsFound) ? parsed.itemsFound : [],
       roomsVisited: Array.isArray(parsed.roomsVisited) ? parsed.roomsVisited : [],
+      fear: typeof parsed.fear === 'number' ? Math.max(0, Math.min(100, parsed.fear)) : 0,
+      horrorSeen: Array.isArray(parsed.horrorSeen) ? parsed.horrorSeen : [],
     };
   } catch {
     return emptySave;
