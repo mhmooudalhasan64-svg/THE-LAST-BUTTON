@@ -63,6 +63,7 @@ function App() {
   const [hazard, setHazard] = useState<'blackout' | 'lockdown' | null>(null);
   const [chase, setChase] = useState<{ phase: 'approach' | 'chase' | 'caught' | 'escaped'; ticks: number } | null>(null);
   const [stalkerPosition, setStalkerPosition] = useState(16);
+  const [stalkerDirection, setStalkerDirection] = useState<1 | -1>(1);
   const [stalkerRoomsSeen, setStalkerRoomsSeen] = useState<string[]>([]);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
@@ -114,12 +115,14 @@ function App() {
       setSave((current) => ({ ...current, horrorSeen: [...current.horrorSeen, 'stalker'], fear: Math.min(100, current.fear + 10) }));
       setStalkerRoomsSeen((seen) => seen.includes(roomId) ? seen : [...seen, roomId]);
       setStalkerPosition(16);
+      setStalkerDirection(1);
       setChase({ phase: 'approach', ticks: 4 });
       return;
     }
     if (save.horrorSeen.includes('stalker') && !stalkerRoomsSeen.includes(roomId)) {
       setStalkerRoomsSeen((seen) => [...seen, roomId]);
       setStalkerPosition(16);
+      setStalkerDirection(1);
       setChase({ phase: 'approach', ticks: 3 });
     }
   }, [tab, roomId, save.itemsFound.length, save.horrorSeen, chase, stalkerRoomsSeen]);
@@ -127,7 +130,12 @@ function App() {
   useEffect(() => {
     if (!chase || chase.phase === 'caught' || chase.phase === 'escaped') return;
     const timer = window.setInterval(() => {
-      setStalkerPosition((position) => Math.min(88, position + (chase.phase === 'approach' ? 8 : 14)));
+      setStalkerPosition((position) => {
+        const next = position + (chase.phase === 'approach' ? 8 : 14) * stalkerDirection;
+        if (next >= 88) { setStalkerDirection(-1); return 88; }
+        if (next <= 12) { setStalkerDirection(1); return 12; }
+        return next;
+      });
       setChase((current) => {
         if (!current || current.phase === 'caught' || current.phase === 'escaped') return current;
         if (current.ticks > 1) return { ...current, ticks: current.ticks - 1 };
@@ -272,7 +280,7 @@ function App() {
               {chase.phase === 'caught' && <>
                 <h2>{isAr ? 'أمسك بك...' : 'IT CAUGHT YOU...'}</h2>
                 <p>{isAr ? 'تستيقظ قرب باب المولد. لم يتركك تخرج، لكنه ابتعد للحظة.' : 'You wake beside the generator door. It did not let you leave—but it has moved away for now.'}</p>
-                <div className="encounter-actions"><button onClick={() => { setStalkerPosition(16); setChase({ phase: 'approach', ticks: 4 }); }}>{isAr ? 'حاول مرة أخرى' : 'TRY AGAIN'}</button></div>
+                <div className="encounter-actions"><button onClick={() => { setStalkerPosition(16); setStalkerDirection(1); setChase({ phase: 'approach', ticks: 4 }); }}>{isAr ? 'حاول مرة أخرى' : 'TRY AGAIN'}</button></div>
               </>}
               {chase.phase === 'escaped' && <>
                 <h2>{isAr ? 'نجوت... هذه المرة' : 'YOU SURVIVED. THIS TIME.'}</h2>
