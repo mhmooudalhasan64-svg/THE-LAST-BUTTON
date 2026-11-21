@@ -20,6 +20,8 @@ const copy = {
     rarity:{common:'SIGNAL',uncommon:'CLUE',rare:'ANOMALY'},
     kinds:{message:'MESSAGE',clue:'EVIDENCE',anomaly:'ANOMALY'},
     footer:'YOUR CHOICES LEAVE TRACES.', discovered:'DISCOVERED',
+    chapterNames:['THE BEGINNING','THE SIGNAL','THE SECRET'],
+    chapterDescriptions:['Every mystery begins with a question.','Something is trying to reach you.','The fragments are starting to connect.'],
     noEvent:'The signal is quiet.', noEventBody:'For now.',
     firstSecret:'A fragment has been added to your archive.',
   },
@@ -35,6 +37,8 @@ const copy = {
     rarity:{common:'إشارة',uncommon:'دليل',rare:'حدث نادر'},
     kinds:{message:'رسالة',clue:'دليل',anomaly:'ظاهرة'},
     footer:'كل اختيار يترك أثراً.', discovered:'مكتشف',
+    chapterNames:['البداية','الإشارة','السر'],
+    chapterDescriptions:['كل لغز يبدأ بسؤال.','هناك شيء يحاول الوصول إليك.','بدأت الأجزاء تتصل ببعضها.'],
     noEvent:'الإشارة هادئة.', noEventBody:'في الوقت الحالي.',
     firstSecret:'تمت إضافة جزء إلى أرشيفك.',
   },
@@ -43,7 +47,13 @@ const copy = {
 function App() {
   const [save, setSave] = useState<GameSave>(() => loadSave());
   const [tab, setTab] = useState<Tab>('play');
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      return localStorage.getItem('the-last-button-language') === 'ar' ? 'ar' : 'en';
+    } catch {
+      return 'en';
+    }
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [event, setEvent] = useState<MysteryEvent | null>(null);
   const [flash, setFlash] = useState(false);
@@ -52,6 +62,13 @@ function App() {
   const isAr = language === 'ar';
 
   useEffect(() => persistSave(save), [save]);
+  useEffect(() => {
+    try {
+      localStorage.setItem('the-last-button-language', language);
+    } catch {
+      // Language preference is optional when browser storage is unavailable.
+    }
+  }, [language]);
 
   const chapter = getChapter(save.presses, save.clues.length);
   const level = getLevel(save.presses);
@@ -117,8 +134,8 @@ function App() {
       <section className="game-layout">
         <aside className="side-panel">
           <div className="side-label">{t.chapter} 0{chapter}</div>
-          <div className="chapter-title">{chapter === 1 ? 'THE BEGINNING' : chapter === 2 ? 'THE SIGNAL' : 'THE SECRET'}</div>
-          <p className="chapter-copy">{chapter === 1 ? 'Every mystery begins with a question.' : chapter === 2 ? 'Something is trying to reach you.' : 'The fragments are starting to connect.'}</p>
+          <div className="chapter-title">{t.chapterNames[chapter - 1]}</div>
+          <p className="chapter-copy">{t.chapterDescriptions[chapter - 1]}</p>
           <div className="side-divider" />
           <div className="stat-row"><span>{t.level}</span><strong>{String(level).padStart(2,'0')}</strong></div>
           <div className="stat-row"><span>{t.presses}</span><strong>{String(save.presses).padStart(4,'0')}</strong></div>
