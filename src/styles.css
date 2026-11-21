@@ -162,3 +162,22 @@ button{font:inherit}
 .rtl .room-heading{text-align:right}
 .rtl .scene-code{left:auto;right:14px}
 @media(max-width:760px){.panel-tabs{grid-template-columns:repeat(4,1fr)!important}.room-scene{height:180px}.object-list{grid-template-columns:1fr}.exploration-stage{padding:0 2px}.explore-content{max-height:none}}
+
+/* Intense horror encounter system */
+.fear-meter{margin-top:15px;padding:11px 12px;border:1px solid #ffffff13;background:#05050888;border-radius:8px}
+.fear-meter>div{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.fear-meter span,.horror-kicker{font:8px 'DM Mono',monospace;letter-spacing:.16em;color:#b85a68}
+.fear-meter strong{font:10px 'DM Mono',monospace;color:#e2a2aa}
+.fear-meter>i{display:block;height:4px;border-radius:5px;background:#ffffff12;overflow:hidden}
+.fear-meter>i>b{display:block;height:100%;background:linear-gradient(90deg,#78313d,#ed354f);box-shadow:0 0 12px #d92e48;transition:width .45s}
+.horror-encounter{position:relative;margin-top:13px;padding:16px;border:1px solid #a52e43;background:radial-gradient(ellipse at 50% 0%,#8b1d3026,#08070b 70%);border-radius:9px;box-shadow:0 0 28px #b51c3320;animation:horror-arrive .35s ease}
+.horror-encounter:before{content:'';position:absolute;inset:0;border-radius:9px;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 3px,#ffffff05 4px)}
+.horror-encounter h2{position:relative;font-size:14px;letter-spacing:.08em;color:#f0dfe2;margin:10px 0 7px}
+.horror-encounter p{position:relative;font-size:10px;line-height:1.85;color:#c3aeb4;margin:0}
+.encounter-actions{position:relative;display:flex;gap:8px;margin-top:14px}
+.encounter-actions button{flex:1;padding:9px 6px;border:1px solid #8c3b4a;border-radius:6px;background:#6e1b2a30;color:#e8cbd1;font-size:9px;cursor:pointer}
+.encounter-actions button:last-child{border-color:#ffffff22;background:#ffffff08;color:#b9aeb5}
+@keyframes horror-arrive{0%{opacity:0;transform:translateY(8px) scale(.985);filter:blur(3px)}100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+.rtl .fear-meter>div{flex-direction:row-reverse}
+.rtl .horror-encounter{text-align:right}
+@media(prefers-reduced-motion:reduce){.horror-encounter{animation:none}}
