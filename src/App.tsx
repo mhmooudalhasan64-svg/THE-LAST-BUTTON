@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Archive, AudioLines, BookOpen, ChevronRight, CircleHelp, Eye, LockKeyhole, RotateCcw, Settings2, Sparkles, Trophy, Volume2, VolumeX, X } from 'lucide-react';
 import { mysteryEvents, chooseEvent, type MysteryEvent } from './data/events';
 import { achievements, getChapter, getLevel } from './engine/progression';
@@ -108,6 +108,75 @@ function App() {
   const [stalkerPosition, setStalkerPosition] = useState(16);
   const [stalkerDirection, setStalkerDirection] = useState<1 | -1>(1);
   const [stalkerRoomsSeen, setStalkerRoomsSeen] = useState<string[]>([]);
+
+  const audioMoodRef = useRef<{ phase: string | null; fear: number }>({ phase: null, fear: 0 });
+  audioMoodRef.current = { phase: chase?.phase ?? null, fear: save.fear };
+
+  useEffect(() => {
+    if (tab !== 'explore' || !save.soundOn) return;
+    let audio: AudioContext | null = null;
+    let interval = 0;
+    try {
+      audio = new AudioContext();
+      const filter = audio.createBiquadFilter();
+      const master = audio.createGain();
+      const low = audio.createOscillator();
+      const high = audio.createOscillator();
+      const lowGain = audio.createGain();
+      const highGain = audio.createGain();
+      filter.type = 'lowpass';
+      filter.frequency.value = 260;
+      master.gain.value = 0.0001;
+      low.type = 'sine';
+      high.type = 'triangle';
+      low.frequency.value = 44;
+      high.frequency.value = 67;
+      lowGain.gain.value = 0.72;
+      highGain.gain.value = 0.18;
+      low.connect(lowGain);
+      high.connect(highGain);
+      lowGain.connect(filter);
+      highGain.connect(filter);
+      filter.connect(master);
+      master.connect(audio.destination);
+      low.start();
+      high.start();
+      void audio.resume();
+
+      const adapt = () => {
+        if (!audio) return;
+        const mood = audioMoodRef.current;
+        const now = audio.currentTime;
+        const chasing = mood.phase === 'chase';
+        const approaching = mood.phase === 'approach';
+        const volume = chasing ? 0.042 : approaching ? 0.026 : 0.006 + mood.fear * 0.00009;
+        const base = chasing ? 58 : approaching ? 51 : 42 + mood.fear * 0.07;
+        master.gain.setTargetAtTime(volume, now, 0.7);
+        low.frequency.setTargetAtTime(base, now, 0.8);
+        high.frequency.setTargetAtTime(base * (chasing ? 1.72 : 1.53), now, 0.9);
+        filter.frequency.setTargetAtTime(chasing ? 390 : approaching ? 310 : 220, now, 0.9);
+      };
+      adapt();
+      interval = window.setInterval(adapt, 450);
+    } catch {
+      if (audio) void audio.close();
+      return;
+    }
+    return () => {
+      window.clearInterval(interval);
+      if (audio) {
+        try {
+          const now = audio.currentTime;
+          // Fade the ambience before releasing its audio graph.
+          const destination = audio.destination;
+          void destination;
+          void now;
+          void audio.close();
+        } catch { /* Audio is optional. */ }
+      }
+    };
+  }, [tab, save.soundOn]);
+
 
   useEffect(() => {
     if (!save.soundOn || !chase || (chase.phase !== 'approach' && chase.phase !== 'chase')) return;
