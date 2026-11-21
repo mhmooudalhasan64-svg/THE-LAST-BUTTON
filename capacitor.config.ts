@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.aurevon.thelastbutton',
   appName: 'THE LAST BUTTON',
   webDir: 'dist',
-  bundledWebRuntime: false,
   android: {
     backgroundColor: '#09090d',
     allowMixedContent: false,
