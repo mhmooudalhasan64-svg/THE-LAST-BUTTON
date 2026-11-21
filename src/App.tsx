@@ -166,12 +166,7 @@ function App() {
       window.clearInterval(interval);
       if (audio) {
         try {
-          const now = audio.currentTime;
-          // Fade the ambience before releasing its audio graph.
-          const destination = audio.destination;
-          void destination;
-          void now;
-          void audio.close();
+          audio.close();
         } catch { /* Audio is optional. */ }
       }
     };
