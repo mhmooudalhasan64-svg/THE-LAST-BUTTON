@@ -3,8 +3,9 @@ import { Archive, AudioLines, BookOpen, ChevronRight, CircleHelp, Eye, LockKeyho
 import { mysteryEvents, chooseEvent, type MysteryEvent } from './data/events';
 import { achievements, getChapter, getLevel } from './engine/progression';
 import { emptySave, loadSave, persistSave, type GameSave } from './engine/save';
+import { rooms } from './data/exploration';
 
-type Tab = 'play' | 'archive' | 'records';
+type Tab = 'play' | 'explore' | 'archive' | 'records';
 type Language = 'en' | 'ar';
 
 const copy = {
@@ -56,6 +57,15 @@ function App() {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [event, setEvent] = useState<MysteryEvent | null>(null);
+  const [roomId, setRoomId] = useState('control');
+  const [inspected, setInspected] = useState<string | null>(null);
+  const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
+  const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
+  function inspectObject(object: typeof room.objects[number]) {
+    setInspected(object.id);
+    if (!save.itemsFound.includes(object.item)) setSave((current) => ({ ...current, itemsFound: [...current.itemsFound, object.item] }));
+    if (!save.roomsVisited.includes(room.id)) setSave((current) => ({ ...current, roomsVisited: [...current.roomsVisited, room.id] }));
+  }
   const [flash, setFlash] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const t = copy[language];
