@@ -9,6 +9,7 @@ export type GameSave = {
   roomsVisited: string[];
   fear: number;
   horrorSeen: string[];
+  hazardSeen: string[];
 };
 
 const KEY = 'the-last-button-save-v1';
@@ -24,6 +25,7 @@ export const emptySave: GameSave = {
   roomsVisited: [],
   fear: 0,
   horrorSeen: [],
+  hazardSeen: [],
 };
 
 export function loadSave(): GameSave {
@@ -41,6 +43,7 @@ export function loadSave(): GameSave {
       roomsVisited: Array.isArray(parsed.roomsVisited) ? parsed.roomsVisited : [],
       fear: typeof parsed.fear === 'number' ? Math.max(0, Math.min(100, parsed.fear)) : 0,
       horrorSeen: Array.isArray(parsed.horrorSeen) ? parsed.horrorSeen : [],
+      hazardSeen: Array.isArray(parsed.hazardSeen) ? parsed.hazardSeen : [],
     };
   } catch {
     return emptySave;
