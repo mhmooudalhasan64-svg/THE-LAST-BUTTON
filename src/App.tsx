@@ -60,6 +60,7 @@ function App() {
   const [roomId, setRoomId] = useState('control');
   const [inspected, setInspected] = useState<string | null>(null);
   const [encounter, setEncounter] = useState<{ title: string; body: string } | null>(null);
+  const [hazard, setHazard] = useState<'blackout' | 'lockdown' | null>(null);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const roomUnlocked = (item: typeof rooms[number]) => save.itemsFound.length >= item.requirement;
   const horrorEvents: Record<string, { title: string; body: string; titleAr: string; bodyAr: string; fear: number }> = {
@@ -76,18 +77,33 @@ function App() {
     setInspected(object.id);
     const event = horrorEvents[object.item];
     const firstEncounter = !save.horrorSeen.includes(object.item);
+    const alreadyCollected = save.itemsFound.includes(object.item);
+    const nextEvidenceCount = save.itemsFound.length + (alreadyCollected ? 0 : 1);
+    const triggeredHazard = nextEvidenceCount === 2 && !save.hazardSeen.includes('blackout')
+      ? 'blackout'
+      : nextEvidenceCount === 4 && !save.hazardSeen.includes('lockdown') ? 'lockdown' : null;
     setSave((current) => ({
       ...current,
       itemsFound: current.itemsFound.includes(object.item) ? current.itemsFound : [...current.itemsFound, object.item],
       roomsVisited: current.roomsVisited.includes(room.id) ? current.roomsVisited : [...current.roomsVisited, room.id],
       fear: firstEncounter ? Math.min(100, current.fear + (event?.fear ?? 8)) : current.fear,
       horrorSeen: firstEncounter ? [...current.horrorSeen, object.item] : current.horrorSeen,
+      hazardSeen: triggeredHazard ? [...current.hazardSeen, triggeredHazard] : current.hazardSeen,
     }));
-    if (event && firstEncounter) setEncounter({ title: isAr ? event.titleAr : event.title, body: isAr ? event.bodyAr : event.body });
+    if (triggeredHazard) {
+      setHazard(triggeredHazard);
+      setEncounter(null);
+    } else if (event && firstEncounter) {
+      setEncounter({ title: isAr ? event.titleAr : event.title, body: isAr ? event.bodyAr : event.body });
+    }
   }
   function faceEncounter(action: 'hide' | 'run') {
     setSave((current) => ({ ...current, fear: Math.max(0, Math.min(100, current.fear + (action === 'hide' ? -12 : 8))) }));
     setEncounter(null);
+  }
+  function resolveHazard(action: 'restore' | 'hide') {
+    setSave((current) => ({ ...current, fear: Math.max(0, Math.min(100, current.fear + (action === 'restore' ? 5 : -10))) }));
+    setHazard(null);
   }
   const [flash, setFlash] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -186,6 +202,15 @@ function App() {
             <div className="object-list">{room.objects.map((object) => { const found = save.itemsFound.includes(object.item); return <button className={`object-card ${found ? 'found' : ''}`} key={object.id} onClick={() => inspectObject(object)}><span className="object-icon">{found ? '✓' : '⌕'}</span><span><strong>{isAr ? object.nameAr : object.name}</strong><small>{found ? (isAr ? 'تم فحصه' : 'INSPECTED') : (isAr ? 'افحص العنصر' : 'INSPECT OBJECT')}</small></span><b>›</b></button>; })}</div>
             {inspected && <div className="inspection-result"><span>{isAr ? 'نتيجة الفحص' : 'INSPECTION RESULT'}</span><p>{isAr ? room.objects.find((item) => item.id === inspected)?.detailAr : room.objects.find((item) => item.id === inspected)?.detail}</p></div>}
             {encounter && <div className="horror-encounter" role="alert"><span className="horror-kicker">{isAr ? 'تحذير / حدث غير معروف' : 'WARNING / UNKNOWN EVENT'}</span><h2>{encounter.title}</h2><p>{encounter.body}</p><div className="encounter-actions"><button onClick={() => faceEncounter('hide')}>{isAr ? 'اختبئ واحبس أنفاسك' : 'HIDE & HOLD BREATH'}</button><button onClick={() => faceEncounter('run')}>{isAr ? 'اهرب الآن' : 'RUN NOW'}</button></div></div>}
+            {hazard && <div className={`environment-hazard ${hazard}`} role="alert">
+              <span className="horror-kicker">{isAr ? 'خطر بيئي / منشأة 09' : 'FACILITY 09 / ENVIRONMENTAL HAZARD'}</span>
+              <h2>{hazard === 'blackout' ? (isAr ? 'انقطاع كامل للكهرباء' : 'TOTAL POWER FAILURE') : (isAr ? 'إغلاق أمني طارئ' : 'EMERGENCY LOCKDOWN')}</h2>
+              <p>{hazard === 'blackout' ? (isAr ? 'تنطفئ الأضواء دفعة واحدة. تسمع حركة سريعة قرب الباب، ثم يتوقف كل شيء.' : 'Every light dies at once. Something moves quickly near the door, then everything stops.') : (isAr ? 'تُغلق الأبواب تلقائياً. يعلن النظام أن شخصاً غير مصرح له يتحرك داخل المنشأة.' : 'The doors seal automatically. The system reports an unauthorized presence moving through the facility.')}</p>
+              <div className="encounter-actions">
+                <button onClick={() => resolveHazard('restore')}>{hazard === 'blackout' ? (isAr ? 'شغّل الطاقة الاحتياطية' : 'RESTORE BACKUP POWER') : (isAr ? 'فعّل تجاوز القفل' : 'OVERRIDE LOCKDOWN')}</button>
+                <button onClick={() => resolveHazard('hide')}>{isAr ? 'اختبئ وانتظر' : 'HIDE & WAIT'}</button>
+              </div>
+            </div>}
             <button className="back-button" onClick={() => setTab('play')}>{isAr ? 'العودة إلى الزر' : 'RETURN TO THE BUTTON'}</button>
           </div> : <><div className="stage-topline"><span><i className="tiny-dot" />{t.status}</span><span>NO. {String(save.presses + 1).padStart(5,'0')}</span></div>
           <div className="button-zone">
